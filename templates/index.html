@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#101c2c">
+    <title>Shortlink — URL Shortener</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  </head>
+  <body>
+    <main class="shell">
+      <header class="topbar">
+        <a class="brand" href="/" aria-label="Shortlink home"><span class="brand-mark">↗</span> shortlink</a>
+        <span class="status"><span class="status-dot"></span> API online</span>
+      </header>
+
+      <section class="hero" aria-labelledby="title">
+        <p class="eyebrow">CODEALPHA · BACKEND TASK 01</p>
+        <h1 id="title">Long link.<br><span>Short story.</span></h1>
+        <p class="intro">Turn a long URL into a compact link you can share anywhere.</p>
+
+        <form id="shorten-form" class="url-form">
+          <label for="url-input">Your destination URL</label>
+          <div class="input-row">
+            <input id="url-input" name="url" type="url" placeholder="https://example.com/a/very/long/link" autocomplete="url" required>
+            <button type="submit"><span>Shorten link</span><span aria-hidden="true">↗</span></button>
+          </div>
+          <p class="helper">Works with secure HTTPS and HTTP links.</p>
+        </form>
+
+        <section id="result" class="result" aria-live="polite" hidden>
+          <div>
+            <p class="result-label">YOUR SHORT LINK</p>
+            <a id="short-url" href="#" target="_blank" rel="noopener noreferrer"></a>
+          </div>
+          <button id="copy-button" class="copy-button" type="button">Copy</button>
+        </section>
+        <p id="message" class="message" role="status" aria-live="polite"></p>
+      </section>
+
+      <section class="features" aria-label="Service details">
+        <article><span class="feature-number">01</span><h2>Fast by design</h2><p>Create a share-ready link in one step.</p></article>
+        <article><span class="feature-number">02</span><h2>Built to last</h2><p>Links are stored in a local SQLite database.</p></article>
+        <article><span class="feature-number">03</span><h2>Simple redirects</h2><p>Open a short link to reach its destination.</p></article>
+      </section>
+
+      <footer><span>Built for CodeAlpha Backend Development</span><span>Flask · SQLite</span></footer>
+    </main>
+    <script>
+      const form = document.querySelector("#shorten-form");
+      const input = document.querySelector("#url-input");
+      const result = document.querySelector("#result");
+      const shortUrl = document.querySelector("#short-url");
+      const message = document.querySelector("#message");
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        result.hidden = true;
+        message.textContent = "";
+        const submitButton = form.querySelector("button");
+        submitButton.disabled = true;
+        try {
+          const response = await fetch("/api/shorten", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ url: input.value.trim() }),
+          });
+          const body = await response.json();
+          if (!response.ok) throw new Error(body.error || "Could not shorten this URL.");
+          shortUrl.href = body.short_url;
+          shortUrl.textContent = body.short_url;
+          result.hidden = false;
+        } catch (error) {
+          message.textContent = error.message || "Could not reach the service. Try again.";
+        } finally {
+          submitButton.disabled = false;
+        }
+      });
+
+      document.querySelector("#copy-button").addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText(shortUrl.href);
+          message.textContent = "Link copied to clipboard.";
+        } catch {
+          message.textContent = "Copy is unavailable here. Select the link to copy it.";
+        }
+      });
+    </script>
+  </body>
+</html>
